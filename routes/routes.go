@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"restaurant-api/controller"
+	"example/restaurant-api/controller"
 
 	"github.com/labstack/echo/v4"
 )

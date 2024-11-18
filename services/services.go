@@ -2,12 +2,12 @@ package services
 
 import (
 	"context"
+	"example/restaurant-api/config"
+	"example/restaurant-api/models"
+	"example/restaurant-api/request"
+	"example/restaurant-api/response"
 	"fmt"
 	"log"
-	"restaurant-api/config"
-	"restaurant-api/models"
-	"restaurant-api/request"
-	"restaurant-api/response"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -102,6 +102,6 @@ func GetMenuPg() ([]models.MenuItem, error) {
 		}
 		menu = append(menu, menuItem)
 	}
-	
+
 	return menu, nil
 }

@@ -1,8 +1,8 @@
 package main
 
 import (
-	"restaurant-api/config"
-	"restaurant-api/routes"
+	"example/restaurant-api/config"
+	"example/restaurant-api/routes"
 
 	"github.com/labstack/echo/v4"
 )

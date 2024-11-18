@@ -3,8 +3,8 @@ package controller
 import (
 	"fmt"
 	"net/http"
-	"restaurant-api/manager"
-	"restaurant-api/request"
+	"example/restaurant-api/manager"
+	"example/restaurant-api/request"
 
 	"github.com/labstack/echo/v4"
 )

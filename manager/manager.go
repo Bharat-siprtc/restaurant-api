@@ -1,11 +1,11 @@
 package manager
 
 import (
+	"example/restaurant-api/models"
+	"example/restaurant-api/request"
+	"example/restaurant-api/response"
+	"example/restaurant-api/services"
 	"fmt"
-	"restaurant-api/models"
-	"restaurant-api/request"
-	"restaurant-api/response"
-	"restaurant-api/services"
 
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson/primitive"

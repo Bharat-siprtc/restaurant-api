@@ -21,22 +21,34 @@ func ValidateStruct(input interface{}) error {
 func GetMenu() ([]response.AllMenuResponse, error) {
 	return services.GetMenu()
 }
-func CreateMovie(menu request.CreateRequest) error {
+func CreateMenu(menu request.CreateRequest) error {
 	if err := ValidateStruct(menu); err != nil {
 		return err
 	}
-	return services.CreateMovie(menu)
+	return services.CreateMenu(menu)
 }
-func DeleteMovie(id string) error {
-	return services.DeleteMovie(id)
+func DeleteMenu(id string) error {
+	return services.DeleteMenu(id)
 }
-func UpdateMovie(id string, req request.UpdateRequest) error {
+func UpdateMenu(id string, req request.UpdateRequest) error {
 	objId, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
-	return services.UpdateMovie(objId, req)
+	return services.UpdateMenu(objId, req)
 }
 func GetMenuPg() ([]models.MenuItem, error) {
 	return services.GetMenuPg()
+}
+func GetMenuByIdPg(id string) (models.MenuItem,error) {
+	return services.GetMenuByIdPg(id)
+}
+func CreateMenuPg(menu request.CreateRequest)error{
+	return services.CreateMenuPg(menu)
+}
+func UpdateMenuPg(id string,menu request.UpdateRequest)  error{
+	return services.UpdateMenuPg(id,menu)
+}
+func DeleteMenuPg(id string) error {
+	return services.DeleteMenuPg(id)
 }

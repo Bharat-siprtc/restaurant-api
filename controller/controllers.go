@@ -1,10 +1,10 @@
 package controller
 
 import (
-	"fmt"
-	"net/http"
 	"example/restaurant-api/manager"
 	"example/restaurant-api/request"
+	"fmt"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
@@ -16,31 +16,31 @@ func GetMenu(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, menu)
 }
-func CreateMovie(c echo.Context) error {
+func CreateMenu(c echo.Context) error {
 	var menu request.CreateRequest
 	if err := c.Bind(&menu); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	if err := manager.CreateMovie(menu); err != nil {
+	if err := manager.CreateMenu(menu); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	return c.JSON(http.StatusOK, "movie created successfully.")
+	return c.JSON(http.StatusOK, "menu created successfully.")
 }
-func DeleteMovie(c echo.Context) error {
+func DeleteMenu(c echo.Context) error {
 	id := c.Param("id")
 
-	if err := manager.DeleteMovie(id); err != nil {
+	if err := manager.DeleteMenu(id); err != nil {
 		return c.JSON(http.StatusOK, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, map[string]string{"sucess": "food item with given id is deleted successfully"})
 }
-func UpdateMovie(c echo.Context) error {
+func UpdateMenu(c echo.Context) error {
 	id := c.Param("id")
 	var req request.UpdateRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	if err := manager.UpdateMovie(id, req); err != nil {
+	if err := manager.UpdateMenu(id, req); err != nil {
 		return c.JSON(http.StatusOK, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, map[string]string{"sucess": fmt.Sprintf("food item with id %v is updated successfully", id)})
@@ -50,5 +50,43 @@ func GetMenuPg(c echo.Context) error {
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
+	// return c.JSON(http.StatusOK, menu)
 	return c.JSON(http.StatusOK, menu)
+}
+func GetMenuByIdPg(c echo.Context) error {
+	id := c.Param("id")
+	res, err := manager.GetMenuByIdPg(id)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("error in getting data: %v", err)})
+	}
+	return c.JSON(http.StatusOK, res)
+}
+func CreateMenuPg(c echo.Context) error {
+	var menu request.CreateRequest
+	if err := c.Bind(&menu); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	if err := manager.CreateMenuPg(menu); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	return c.JSON(http.StatusOK, "menu created successfully.")
+}
+func UpdateMenuPg(c echo.Context) error {
+	id := c.Param("id")
+	var menu request.UpdateRequest
+	if err := c.Bind(&menu); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+	if err := manager.UpdateMenuPg(id, menu); err != nil {
+		return c.JSON(http.StatusBadRequest, err.Error())
+	}
+
+	return c.JSON(http.StatusOK, "sucessfully updated")
+}
+func DeleteMenuPg(c echo.Context) error {
+	id := c.Param("id")
+	if err := manager.DeleteMenuPg(id); err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("error in delete:%v", err)})
+	}
+	return c.JSON(http.StatusOK, map[string]string{"success": fmt.Sprintf("menuitem with id %v deleted successfull.", id)})
 }

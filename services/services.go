@@ -29,7 +29,7 @@ func GetMenu() ([]response.AllMenuResponse, error) {
 	}
 	return menu, nil
 }
-func CreateMovie(menu request.CreateRequest) error {
+func CreateMenu(menu request.CreateRequest) error {
 	collection := config.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -40,7 +40,7 @@ func CreateMovie(menu request.CreateRequest) error {
 	}
 	return nil
 }
-func DeleteMovie(id string) error {
+func DeleteMenu(id string) error {
 	collection := config.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -58,7 +58,7 @@ func DeleteMovie(id string) error {
 	return nil
 }
 
-func UpdateMovie(objId primitive.ObjectID, req request.UpdateRequest) error {
+func UpdateMenu(objId primitive.ObjectID, req request.UpdateRequest) error {
 	collection := config.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -86,7 +86,7 @@ func GetMenuPg() ([]models.MenuItem, error) {
 	var menu []models.MenuItem
 
 	// Fetch all movies from the database
-	rows, err := config.PG.Query("SELECT * FROM menu")
+	rows, err := config.PG.Query("SELECT id, name, category, description, price FROM menu")
 	if err != nil {
 		log.Println("Error getting movies:", err)
 		return nil, fmt.Errorf("Error getting movies: %v", err)
@@ -97,11 +97,63 @@ func GetMenuPg() ([]models.MenuItem, error) {
 	for rows.Next() {
 		var menuItem models.MenuItem
 		if err := rows.Scan(&menuItem.ID, &menuItem.Name, &menuItem.Category, &menuItem.Desc, &menuItem.Price); err != nil {
-			log.Println("Error scanning movie:", err)
-			return nil, fmt.Errorf("Error scanning movie: %v", err)
+			log.Println("Error scanning menu item:", err)
+			return nil, fmt.Errorf("Error scanning menu item: %v", err)
 		}
 		menu = append(menu, menuItem)
 	}
-
 	return menu, nil
+}
+func GetMenuByIdPg(id string) (models.MenuItem, error) {
+	// query:="SELECT * FROM menu WHERE id=$1"
+	var menuItem models.MenuItem
+	err := config.PG.QueryRow("SELECT id, name, category, description, price FROM menu WHERE id = $1", id).Scan(
+		&menuItem.ID,
+		&menuItem.Name,
+		&menuItem.Category,
+		&menuItem.Desc,
+		&menuItem.Price,
+	)
+	if err != nil {
+		return models.MenuItem{}, fmt.Errorf("error in fetching data:%v", err)
+	}
+	return menuItem, nil
+}
+func CreateMenuPg(menu request.CreateRequest) error {
+	query := "INSERT INTO menu (name, category, description, price) VALUES ($1, $2, $3, $4)"
+	_, err := config.PG.Exec(query, menu.Name, menu.Category, menu.Desc, menu.Price)
+	if err != nil {
+		log.Println("Error inserting menu item:", err)
+		return fmt.Errorf("Error inserting menu item: %v", err)
+	}
+	log.Println("Menu item created successfully")
+	return nil
+}
+func UpdateMenuPg(id string, menu request.UpdateRequest) error {
+	query := "UPDATE menu SET name=$1, category=$2, description=$3, price=$4 WHERE id=$5"
+	result, err := config.PG.Exec(query, menu.Name, menu.Category, menu.Desc, menu.Price, id)
+	if err != nil {
+		log.Println("Error inserting menu item:", err)
+		return fmt.Errorf("Error updating menu item: %v", err)
+	}
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return fmt.Errorf("No menu item found with ID %v", id)
+	}
+	log.Println("Menu item updated successfully")
+	return nil
+}
+func DeleteMenuPg(id string) error {
+	query := "DELETE FROM menu WHERE id=$1"
+	result, err := config.PG.Exec(query, id)
+	if err != nil {
+		log.Println("Error Deleting menu item:", err)
+		return fmt.Errorf("Error updating menu item: %v", err)
+	}
+
+	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
+		return fmt.Errorf("No menu item found with ID %v", id)
+	}
+
+	log.Println("Menu item Deleted successfully")
+	return nil
 }

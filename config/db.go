@@ -44,19 +44,28 @@ func PostgresConnect() {
 	postgresDB := os.Getenv("POSTGRES_DB")
 
 	// Format PostgreSQL DSN string
-	postgresDSN := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		postgresHost, postgresPort, postgresUser, postgresPassword, postgresDB)
-	log.Printf("Connecting to PostgreSQL with DSN: %s", postgresDSN)
+	postgresDSN := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", postgresHost, postgresPort, postgresUser, postgresPassword, postgresDB)
+	// log.Printf("Connecting to PostgreSQL with DSN: %s", "postgres", "user=postgres dbname=restaurant sslmode=disable")
 	// Connect to PostgreSQL
+	// PGDB, err := sql.Open("postgres", "user=postgres dbname=restaurant sslmode=disable password=2503")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer PGDB.Close()
+
 	PGDB, err := sql.Open("postgres", postgresDSN)
 	if err != nil {
 		log.Fatal("Error connecting to PostgreSQL:", err)
 	}
-
+	
 	// Test PostgreSQL connection
 	err = PGDB.Ping()
 	if err != nil {
 		log.Fatal("Error pinging PostgreSQL:", err)
 	}
+	if PGDB == nil {
+		log.Println("Database connection is nil!")
+	}
+	PG = PGDB
 	log.Println("Connected to PostgreSQL successfully!")
 }

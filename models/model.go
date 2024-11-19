@@ -7,3 +7,11 @@ type MenuItem struct {
 	Desc     string  `json:"description" bson:"description"`
 	Price    float32 `json:"price" bson:"price"`
 }
+type Config struct {
+    MongoDB MongoDBConfig `toml:"mongodb"`
+}
+
+type MongoDBConfig struct {
+    URI      string `toml:"uri"`      // MongoDB connection string
+    Database string `toml:"database"` // Database name
+}

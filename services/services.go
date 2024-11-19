@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func GetMenu() ([]response.AllMenuResponse, error) {
@@ -45,11 +44,11 @@ func DeleteMenu(id string) error {
 	collection := config.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	objId, err := primitive.ObjectIDFromHex(id)
+	intId, err := strconv.Atoi(id)
 	if err != nil {
-		return err
+		return fmt.Errorf("please enter valid id")
 	}
-	res, err := collection.DeleteOne(ctx, bson.M{"_id": objId})
+	res, err := collection.DeleteOne(ctx, bson.M{"id": intId})
 	if err != nil {
 		return err
 	}
@@ -59,7 +58,7 @@ func DeleteMenu(id string) error {
 	return nil
 }
 
-func UpdateMenu(objId primitive.ObjectID, req request.UpdateRequest) error {
+func UpdateMenu(id string, req request.UpdateRequest) error {
 	collection := config.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -71,20 +70,22 @@ func UpdateMenu(objId primitive.ObjectID, req request.UpdateRequest) error {
 			"price":    req.Price,
 		},
 	}
-	res, err := collection.UpdateByID(ctx, objId, update)
+	intId, err := strconv.Atoi(id)
+
+	res, err := collection.UpdateOne(ctx, bson.M{"id": intId}, update)
 	if err != nil {
-		fmt.Errorf("there is an error in updation:%v", err)
+		return fmt.Errorf("there is an error in updation:%v", err)
 	}
 	if res.MatchedCount == 0 {
-		return fmt.Errorf("no id matched with the given id %v", objId)
+		return fmt.Errorf("no id matched with the given id %v", id)
 	}
 	if res.ModifiedCount == 0 {
-		return fmt.Errorf("failed! there is an problem in updation of id %v", objId)
+		return fmt.Errorf("failed! there is an problem in updation of id %v", id)
 	}
 	return nil
 }
-func GetMenuPg() ([]models.MenuItem, error) {
-	var menu []models.MenuItem
+func GetMenuPg() ([]response.AllMenuResponse, error) {
+	var menu []response.AllMenuResponse
 
 	// Fetch all movies from the database
 	rows, err := config.PG.Query("SELECT id, name, category, description, price FROM menu")
@@ -96,7 +97,8 @@ func GetMenuPg() ([]models.MenuItem, error) {
 
 	// Iterate through rows and append to the movies slice
 	for rows.Next() {
-		var menuItem models.MenuItem
+		var menuItem response.AllMenuResponse
+		// var id primitive.ObjectID
 		if err := rows.Scan(&menuItem.ID, &menuItem.Name, &menuItem.Category, &menuItem.Desc, &menuItem.Price); err != nil {
 			log.Println("Error scanning menu item:", err)
 			return nil, fmt.Errorf("Error scanning menu item: %v", err)
@@ -105,32 +107,31 @@ func GetMenuPg() ([]models.MenuItem, error) {
 	}
 	return menu, nil
 }
-func GetMenuPage(page string,size string) ([]models.MenuItem, error) {
+func GetMenuPage(page string, size string) ([]models.MenuItem, error) {
 	var menu []models.MenuItem
-	pg,err:=strconv.Atoi(page)
-	if err!=nil{
-		return nil,fmt.Errorf("please enter valid page no")
+	pg, err := strconv.Atoi(page)
+	if err != nil {
+		return nil, fmt.Errorf("please enter valid page no")
 	}
-	sz,err:=strconv.Atoi(size)
-	if err!=nil{
-		return nil,fmt.Errorf("please enter valid size")
+	sz, err := strconv.Atoi(size)
+	if err != nil {
+		return nil, fmt.Errorf("please enter valid size")
 	}
-	offset:=(pg-1)*sz
+	offset := (pg - 1) * sz
 	// Fetch menu from the database
-	var totalCount int
-	rows, err := config.PG.Query("SELECT id, name, category, description, price FROM menu LIMIT $1 OFFSET $2",sz,offset)
+	// var totalCount int
+	rows, err := config.PG.Query("SELECT id, name, category, description, price FROM menu LIMIT $1 OFFSET $2", sz, offset)
 	if err != nil {
 		log.Println("Error getting movies:", err)
 		return nil, fmt.Errorf("Error getting movies: %v", err)
 	}
 	// _,er:=config.PG.Query("SELECT COUNT(*) FROM menu").Scan(&totalCount)
-	
-	if err != nil {
-		log.Println("Error getting movies:", err)
-		return nil, fmt.Errorf("Error getting movies: %v", err)
-	}
-	defer rows.Close()
 
+	// if err != nil {
+	// 	log.Println("Error getting movies:", err)
+	// 	return nil, fmt.Errorf("Error getting movies: %v", err)
+	// }
+	defer rows.Close()
 	// Iterate through rows and append to the movies slice
 	for rows.Next() {
 		var menuItem models.MenuItem

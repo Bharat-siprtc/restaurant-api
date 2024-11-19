@@ -8,7 +8,6 @@ import (
 	"fmt"
 
 	"github.com/go-playground/validator/v10"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func ValidateStruct(input interface{}) error {
@@ -18,39 +17,52 @@ func ValidateStruct(input interface{}) error {
 	}
 	return nil
 }
-func GetMenu() ([]response.AllMenuResponse, error) {
-	return services.GetMenu()
+func GetMenu(flag string) ([]response.AllMenuResponse, error) {
+	if flag == "true" {
+		fmt.Printf("mongo db is called.")
+		return services.GetMenu()
+	}
+	// return services.GetMenu()
+	return services.GetMenuPg()
 }
-func CreateMenu(menu request.CreateRequest) error {
+func CreateMenu(flag string, menu request.CreateRequest) error {
 	if err := ValidateStruct(menu); err != nil {
 		return err
 	}
-	return services.CreateMenu(menu)
-}
-func DeleteMenu(id string) error {
-	return services.DeleteMenu(id)
-}
-func UpdateMenu(id string, req request.UpdateRequest) error {
-	objId, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
+	if flag == "true" {
+		return services.CreateMenu(menu)
 	}
-	return services.UpdateMenu(objId, req)
-}
-func GetMenuPg() ([]models.MenuItem, error) {
-	return services.GetMenuPg()
-}
-func GetMenuPage(page string,size string) ([]models.MenuItem, error) {
-	return services.GetMenuPage(page,size)
-}
-func GetMenuByIdPg(id string) (models.MenuItem,error) {
-	return services.GetMenuByIdPg(id)
-}
-func CreateMenuPg(menu request.CreateRequest)error{
 	return services.CreateMenuPg(menu)
 }
-func UpdateMenuPg(id string,menu request.UpdateRequest)  error{
-	return services.UpdateMenuPg(id,menu)
+func DeleteMenu(flag string, id string) error {
+	if flag == "true" {
+		fmt.Printf("mongo db is called.")
+		return services.DeleteMenu(id)
+	}
+	return services.DeleteMenuPg(id)
+}
+func UpdateMenu(flag string, id string, req request.UpdateRequest) error {
+	if flag == "true" {
+		fmt.Printf("mongo db is called.")
+		return services.UpdateMenu(id, req)
+	}
+	return services.UpdateMenuPg(id, req)
+}
+
+//	func GetMenuPg() ([]models.MenuItem, error) {
+//		return services.GetMenuPg()
+//	}
+func GetMenuPage(page string, size string) ([]models.MenuItem, error) {
+	return services.GetMenuPage(page, size)
+}
+func GetMenuByIdPg(id string) (models.MenuItem, error) {
+	return services.GetMenuByIdPg(id)
+}
+func CreateMenuPg(menu request.CreateRequest) error {
+	return services.CreateMenuPg(menu)
+}
+func UpdateMenuPg(id string, menu request.UpdateRequest) error {
+	return services.UpdateMenuPg(id, menu)
 }
 func DeleteMenuPg(id string) error {
 	return services.DeleteMenuPg(id)

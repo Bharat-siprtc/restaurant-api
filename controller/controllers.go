@@ -10,37 +10,41 @@ import (
 )
 
 func GetMenu(c echo.Context) error {
-	menu, err := manager.GetMenu()
+	flag := c.QueryParam("flag")
+	menu, err := manager.GetMenu(flag)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusOK, menu)
 }
 func CreateMenu(c echo.Context) error {
+	flag := c.QueryParam("flag")
 	var menu request.CreateRequest
 	if err := c.Bind(&menu); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	if err := manager.CreateMenu(menu); err != nil {
+	if err := manager.CreateMenu(flag,menu); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
 	return c.JSON(http.StatusOK, "menu created successfully.")
 }
 func DeleteMenu(c echo.Context) error {
+	flag := c.QueryParam("flag")
 	id := c.Param("id")
 
-	if err := manager.DeleteMenu(id); err != nil {
+	if err := manager.DeleteMenu(flag,id); err != nil {
 		return c.JSON(http.StatusOK, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, map[string]string{"sucess": "food item with given id is deleted successfully"})
 }
 func UpdateMenu(c echo.Context) error {
+	flag := c.QueryParam("flag")
 	id := c.Param("id")
 	var req request.UpdateRequest
 	if err := c.Bind(&req); err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}
-	if err := manager.UpdateMenu(id, req); err != nil {
+	if err := manager.UpdateMenu(flag,id, req); err != nil {
 		return c.JSON(http.StatusOK, map[string]string{"error": err.Error()})
 	}
 	return c.JSON(http.StatusOK, map[string]string{"sucess": fmt.Sprintf("food item with id %v is updated successfully", id)})
@@ -55,7 +59,7 @@ func GetMenuPg(c echo.Context) error {
 		}
 		return c.JSON(http.StatusOK, menu)
 	}
-	menu, err := manager.GetMenuPg()
+	menu, err := manager.GetMenu(page)
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())
 	}

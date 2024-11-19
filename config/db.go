@@ -3,10 +3,12 @@ package config
 import (
 	"context"
 	"database/sql"
+	"example/restaurant-api/models"
 	"fmt"
 	"log"
 	"os"
 
+	"github.com/BurntSushi/toml"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +19,11 @@ var DB *mongo.Database
 var PG *sql.DB
 
 func ConnectDB() {
-	clientOptions := options.Client().ApplyURI("mongodb://localhost:27017")
+	var config models.Config
+	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
+		log.Fatalf("Error loading config file: %v", err)
+	}
+	clientOptions := options.Client().ApplyURI(config.MongoDB.URI)
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
 		log.Fatal(err)
@@ -28,7 +34,7 @@ func ConnectDB() {
 		log.Fatal(err)
 	}
 
-	DB = client.Database("restaurantDB")
+	DB = client.Database(config.MongoDB.Database)
 }
 func PostgresConnect() {
 	err := godotenv.Load(".env")
@@ -57,7 +63,7 @@ func PostgresConnect() {
 	if err != nil {
 		log.Fatal("Error connecting to PostgreSQL:", err)
 	}
-	
+
 	// Test PostgreSQL connection
 	err = PGDB.Ping()
 	if err != nil {

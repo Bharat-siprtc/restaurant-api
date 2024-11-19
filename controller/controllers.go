@@ -46,6 +46,15 @@ func UpdateMenu(c echo.Context) error {
 	return c.JSON(http.StatusOK, map[string]string{"sucess": fmt.Sprintf("food item with id %v is updated successfully", id)})
 }
 func GetMenuPg(c echo.Context) error {
+	page := c.QueryParam("page")
+	size := c.QueryParam("size")
+	if page != "" && size != "" {
+		menu, err := manager.GetMenuPage(page, size)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, err.Error())
+		}
+		return c.JSON(http.StatusOK, menu)
+	}
 	menu, err := manager.GetMenuPg()
 	if err != nil {
 		return c.JSON(http.StatusBadRequest, err.Error())

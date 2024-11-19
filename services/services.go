@@ -8,6 +8,7 @@ import (
 	"example/restaurant-api/response"
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -104,6 +105,43 @@ func GetMenuPg() ([]models.MenuItem, error) {
 	}
 	return menu, nil
 }
+func GetMenuPage(page string,size string) ([]models.MenuItem, error) {
+	var menu []models.MenuItem
+	pg,err:=strconv.Atoi(page)
+	if err!=nil{
+		return nil,fmt.Errorf("please enter valid page no")
+	}
+	sz,err:=strconv.Atoi(size)
+	if err!=nil{
+		return nil,fmt.Errorf("please enter valid size")
+	}
+	offset:=(pg-1)*sz
+	// Fetch menu from the database
+	var totalCount int
+	rows, err := config.PG.Query("SELECT id, name, category, description, price FROM menu LIMIT $1 OFFSET $2",sz,offset)
+	if err != nil {
+		log.Println("Error getting movies:", err)
+		return nil, fmt.Errorf("Error getting movies: %v", err)
+	}
+	// _,er:=config.PG.Query("SELECT COUNT(*) FROM menu").Scan(&totalCount)
+	
+	if err != nil {
+		log.Println("Error getting movies:", err)
+		return nil, fmt.Errorf("Error getting movies: %v", err)
+	}
+	defer rows.Close()
+
+	// Iterate through rows and append to the movies slice
+	for rows.Next() {
+		var menuItem models.MenuItem
+		if err := rows.Scan(&menuItem.ID, &menuItem.Name, &menuItem.Category, &menuItem.Desc, &menuItem.Price); err != nil {
+			log.Println("Error scanning menu item:", err)
+			return nil, fmt.Errorf("Error scanning menu item: %v", err)
+		}
+		menu = append(menu, menuItem)
+	}
+	return menu, nil
+}
 func GetMenuByIdPg(id string) (models.MenuItem, error) {
 	// query:="SELECT * FROM menu WHERE id=$1"
 	var menuItem models.MenuItem
@@ -124,7 +162,7 @@ func CreateMenuPg(menu request.CreateRequest) error {
 	_, err := config.PG.Exec(query, menu.Name, menu.Category, menu.Desc, menu.Price)
 	if err != nil {
 		log.Println("Error inserting menu item:", err)
-		return fmt.Errorf("Error inserting menu item: %v", err)
+		return fmt.Errorf("error inserting menu item: %v", err)
 	}
 	log.Println("Menu item created successfully")
 	return nil
@@ -134,10 +172,10 @@ func UpdateMenuPg(id string, menu request.UpdateRequest) error {
 	result, err := config.PG.Exec(query, menu.Name, menu.Category, menu.Desc, menu.Price, id)
 	if err != nil {
 		log.Println("Error inserting menu item:", err)
-		return fmt.Errorf("Error updating menu item: %v", err)
+		return fmt.Errorf("error updating menu item: %v", err)
 	}
 	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
-		return fmt.Errorf("No menu item found with ID %v", id)
+		return fmt.Errorf("no menu item found with ID %v", id)
 	}
 	log.Println("Menu item updated successfully")
 	return nil

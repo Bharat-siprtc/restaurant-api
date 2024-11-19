@@ -40,6 +40,9 @@ func UpdateMenu(id string, req request.UpdateRequest) error {
 func GetMenuPg() ([]models.MenuItem, error) {
 	return services.GetMenuPg()
 }
+func GetMenuPage(page string,size string) ([]models.MenuItem, error) {
+	return services.GetMenuPage(page,size)
+}
 func GetMenuByIdPg(id string) (models.MenuItem,error) {
 	return services.GetMenuByIdPg(id)
 }

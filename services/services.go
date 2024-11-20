@@ -29,6 +29,21 @@ func GetMenu() ([]response.AllMenuResponse, error) {
 	}
 	return menu, nil
 }
+func GetMenuById(id string) (response.AllMenuResponse, error) {
+	var menu response.AllMenuResponse
+	collection := config.DB.Collection("menu")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	intId, err := strconv.Atoi(id)
+	if err != nil {
+		return response.AllMenuResponse{}, err
+	}
+	err = collection.FindOne(ctx, bson.M{"id":intId}).Decode(&menu)
+	if err != nil {
+		return response.AllMenuResponse{}, err
+	}
+	return menu, nil
+}
 func CreateMenu(menu request.CreateRequest) error {
 	collection := config.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -143,9 +158,9 @@ func GetMenuPage(page string, size string) ([]models.MenuItem, error) {
 	}
 	return menu, nil
 }
-func GetMenuByIdPg(id string) (models.MenuItem, error) {
+func GetMenuByIdPg(id string) (response.AllMenuResponse, error) {
 	// query:="SELECT * FROM menu WHERE id=$1"
-	var menuItem models.MenuItem
+	var menuItem response.AllMenuResponse
 	err := config.PG.QueryRow("SELECT id, name, category, description, price FROM menu WHERE id = $1", id).Scan(
 		&menuItem.ID,
 		&menuItem.Name,
@@ -154,10 +169,11 @@ func GetMenuByIdPg(id string) (models.MenuItem, error) {
 		&menuItem.Price,
 	)
 	if err != nil {
-		return models.MenuItem{}, fmt.Errorf("error in fetching data:%v", err)
+		return response.AllMenuResponse{}, fmt.Errorf("error in fetching data:%v", err)
 	}
 	return menuItem, nil
 }
+
 func CreateMenuPg(menu request.CreateRequest) error {
 	query := "INSERT INTO menu (name, category, description, price) VALUES ($1, $2, $3, $4)"
 	_, err := config.PG.Exec(query, menu.Name, menu.Category, menu.Desc, menu.Price)

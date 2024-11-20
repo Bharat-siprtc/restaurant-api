@@ -8,6 +8,7 @@ import (
 
 func InitRoutes(e *echo.Echo) {
 	e.GET("/menu", controller.GetMenu)
+	e.GET("/menu/:id", controller.GetMenuById)
 	// e.GET("/menu/pg", controller.GetMenuPg)
 	// e.GET("/menu/pg/:id", controller.GetMenuByIdPg)
 	// e.GET("/menu/pg", controller.GetMenuPg)

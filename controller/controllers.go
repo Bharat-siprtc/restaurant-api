@@ -17,6 +17,15 @@ func GetMenu(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, menu)
 }
+func GetMenuById(c echo.Context) error {
+	flag := c.QueryParam("flag")
+	id := c.Param("id")
+	res, err := manager.GetMenuById(id,flag)
+	if err != nil {
+		return c.JSON(http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("error in getting data: %v", err)})
+	}
+	return c.JSON(http.StatusOK, res)
+}
 func CreateMenu(c echo.Context) error {
 	flag := c.QueryParam("flag")
 	var menu request.CreateRequest
@@ -66,14 +75,14 @@ func GetMenuPg(c echo.Context) error {
 	// return c.JSON(http.StatusOK, menu)
 	return c.JSON(http.StatusOK, menu)
 }
-func GetMenuByIdPg(c echo.Context) error {
-	id := c.Param("id")
-	res, err := manager.GetMenuByIdPg(id)
-	if err != nil {
-		return c.JSON(http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("error in getting data: %v", err)})
-	}
-	return c.JSON(http.StatusOK, res)
-}
+// func GetMenuByIdPg(c echo.Context) error {
+// 	id := c.Param("id")
+// 	res, err := manager.GetMenuByIdPg(id)
+// 	if err != nil {
+// 		return c.JSON(http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("error in getting data: %v", err)})
+// 	}
+// 	return c.JSON(http.StatusOK, res)
+// }
 func CreateMenuPg(c echo.Context) error {
 	var menu request.CreateRequest
 	if err := c.Bind(&menu); err != nil {

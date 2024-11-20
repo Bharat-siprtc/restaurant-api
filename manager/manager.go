@@ -25,6 +25,12 @@ func GetMenu(flag string) ([]response.AllMenuResponse, error) {
 	// return services.GetMenu()
 	return services.GetMenuPg()
 }
+func GetMenuById(id string,flag string) (response.AllMenuResponse, error) {
+	if flag == "true" {
+		return services.GetMenuById(id)
+	}
+	return services.GetMenuByIdPg(id)
+}
 func CreateMenu(flag string, menu request.CreateRequest) error {
 	if err := ValidateStruct(menu); err != nil {
 		return err
@@ -55,9 +61,9 @@ func UpdateMenu(flag string, id string, req request.UpdateRequest) error {
 func GetMenuPage(page string, size string) ([]models.MenuItem, error) {
 	return services.GetMenuPage(page, size)
 }
-func GetMenuByIdPg(id string) (models.MenuItem, error) {
-	return services.GetMenuByIdPg(id)
-}
+// func GetMenuByIdPg(id string) (models.MenuItem, error) {
+// 	return services.GetMenuByIdPg(id)
+// }
 func CreateMenuPg(menu request.CreateRequest) error {
 	return services.CreateMenuPg(menu)
 }

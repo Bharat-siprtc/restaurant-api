@@ -18,6 +18,42 @@ import (
 var DB *mongo.Database
 var PG *sql.DB
 
+// func loadConfig(filePath string, config *MongoConfig) error {
+// 	// Viper is one option to load TOML config
+// 	viper.SetConfigType("toml")
+// 	viper.SetConfigFile(filePath)
+
+// 	if err := viper.ReadInConfig(); err != nil {
+// 		return fmt.Errorf("error reading config file, %s", err)
+// 	}
+
+// 	// Bind the values to the struct
+// 	if err := viper.Unmarshal(config); err != nil {
+// 		return fmt.Errorf("unable to decode into struct, %v", err)
+// 	}
+
+// 	return nil
+// }
+// func ConnectDB() {
+// 	var config MongoConfig
+// 	if err := loadConfig("config.toml", &config); err != nil {
+// 		log.Fatalf("Error loading config file: %v", err)
+// 	}
+// 	fmt.Println("MongoDB URL from config:", config.MongoDBURL) // Debugging line
+// 	clientOptions := options.Client().ApplyURI(config.MongoDBURL)
+// 	client, err := mongo.Connect(context.Background(), clientOptions)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	err = client.Ping(context.Background(), nil)
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+//		DB = client.Database(config.MongoDBName)
+//		fmt.Println(DB)
+//	}
 func ConnectDB() {
 	var config models.Config
 	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
@@ -72,6 +108,25 @@ func PostgresConnect() {
 	if PGDB == nil {
 		log.Println("Database connection is nil!")
 	}
+	err = createMenuTable(PGDB)
+	if err != nil {
+		log.Fatalf("Failed to create table: %v", err)
+	}
 	PG = PGDB
 	log.Println("Connected to PostgreSQL successfully!")
+}
+func createMenuTable(db *sql.DB) error {
+	query := `
+	CREATE TABLE IF NOT EXISTS menu (
+		id SERIAL PRIMARY KEY,
+		name VARCHAR(100) NOT NULL,
+		category VARCHAR(50),
+		description TEXT,
+		price NUMERIC(10, 2)
+	);`
+	_, err := db.Exec(query)
+	if err != nil {
+		return fmt.Errorf("error creating table: %v", err)
+	}
+	return nil
 }

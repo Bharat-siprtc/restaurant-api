@@ -13,7 +13,37 @@ import (
 
 	"go.mongodb.org/mongo-driver/bson"
 )
-
+func IncrementMongoId() (int,error){
+	collection := config.DB.Collection("counters")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := collection.UpdateOne(ctx, bson.M{"_id": "restaurant_id"},bson.M{"$inc":bson.M{"seq":1}}, )
+	if err != nil {
+		return 0,fmt.Errorf("there is an error in id updation:%v", err)
+	}
+	if res.ModifiedCount==0{
+		return 0,fmt.Errorf("there is an error in increament mongodb ID")
+	}
+	var result response.IdResponse
+	err=collection.FindOne(ctx,bson.M{"_id":"restaurant_id"}).Decode(&result)
+	if err!=nil{
+		return 0,fmt.Errorf("error in getting sequence: %v",err)
+	}
+	return result.ID,nil
+}
+func DecrementMongoId() error{
+	collection := config.DB.Collection("menu")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	res, err := collection.UpdateOne(ctx, bson.M{"id": "restaurant_id"},bson.M{"seq":bson.M{"$inc":-1}} )
+	if err != nil {
+		return fmt.Errorf("there is an error in updation:%v", err)
+	}
+	if res.ModifiedCount==0{
+		return fmt.Errorf("there is an error in increament mongodb ID")
+	}
+	return nil
+}
 func GetMenu() ([]response.AllMenuResponse, error) {
 	var menu []response.AllMenuResponse
 	collection := config.DB.Collection("menu")
@@ -38,22 +68,39 @@ func GetMenuById(id string) (response.AllMenuResponse, error) {
 	if err != nil {
 		return response.AllMenuResponse{}, err
 	}
-	err = collection.FindOne(ctx, bson.M{"id":intId}).Decode(&menu)
+	err = collection.FindOne(ctx, bson.M{"_id": intId}).Decode(&menu)
 	if err != nil {
 		return response.AllMenuResponse{}, err
 	}
 	return menu, nil
 }
-func CreateMenu(menu request.CreateRequest) error {
+func CreateMenu(menu request.CreateRequest) (response.AllMenuResponse,error) {
 	collection := config.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
-	// var resp response.CreateResponse
-	_, err := collection.InsertOne(ctx, menu)
-	if err != nil {
-		return err
+	id,err:=IncrementMongoId()
+	if err!=nil{
+		return response.AllMenuResponse{},err
 	}
-	return nil
+	// var resp response.CreateResponse
+	newMenu := bson.M{
+		"_id":      id, 
+		"name":     menu.Name,
+		"category": menu.Category,
+		"description":     menu.Desc,
+		"price":    menu.Price,
+	}
+	_, err = collection.InsertOne(ctx, newMenu)
+	if err != nil {
+		DecrementMongoId()
+		return response.AllMenuResponse{}, err
+	}
+	var createdMenu response.AllMenuResponse
+	err = collection.FindOne(ctx, bson.M{"_id": id}).Decode(&createdMenu)
+	if err != nil {
+		return response.AllMenuResponse{}, err
+	}
+	return createdMenu,nil
 }
 func DeleteMenu(id string) error {
 	collection := config.DB.Collection("menu")
@@ -63,7 +110,7 @@ func DeleteMenu(id string) error {
 	if err != nil {
 		return fmt.Errorf("please enter valid id")
 	}
-	res, err := collection.DeleteOne(ctx, bson.M{"id": intId})
+	res, err := collection.DeleteOne(ctx, bson.M{"_id": intId})
 	if err != nil {
 		return err
 	}
@@ -73,7 +120,7 @@ func DeleteMenu(id string) error {
 	return nil
 }
 
-func UpdateMenu(id string, req request.UpdateRequest) error {
+func UpdateMenu(id string, req request.CreateRequest) (response.AllMenuResponse,error) {
 	collection := config.DB.Collection("menu")
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -81,23 +128,31 @@ func UpdateMenu(id string, req request.UpdateRequest) error {
 		"$set": bson.M{
 			"name":     req.Name,
 			"category": req.Category,
-			"desc":     req.Desc,
+			"description":     req.Desc,
 			"price":    req.Price,
 		},
 	}
 	intId, err := strconv.Atoi(id)
+	if err!=nil{
+		return response.AllMenuResponse{},err
+	}
 
-	res, err := collection.UpdateOne(ctx, bson.M{"id": intId}, update)
+	res, err := collection.UpdateOne(ctx, bson.M{"_id": intId}, update)
 	if err != nil {
-		return fmt.Errorf("there is an error in updation:%v", err)
+		return response.AllMenuResponse{},fmt.Errorf("there is an error in updation:%v", err)
 	}
 	if res.MatchedCount == 0 {
-		return fmt.Errorf("no id matched with the given id %v", id)
+		return response.AllMenuResponse{},fmt.Errorf("no id matched with the given id %v", intId)
 	}
 	if res.ModifiedCount == 0 {
-		return fmt.Errorf("failed! there is an problem in updation of id %v", id)
+		return response.AllMenuResponse{},fmt.Errorf("failed! there is an problem in updation of id %v", id)
 	}
-	return nil
+	var updatedMenu response.AllMenuResponse
+	err = collection.FindOne(ctx, bson.M{"_id": intId}).Decode(&updatedMenu)
+	if err != nil {
+		return response.AllMenuResponse{}, err
+	}
+	return updatedMenu,nil
 }
 func GetMenuPg() ([]response.AllMenuResponse, error) {
 	var menu []response.AllMenuResponse
@@ -174,28 +229,46 @@ func GetMenuByIdPg(id string) (response.AllMenuResponse, error) {
 	return menuItem, nil
 }
 
-func CreateMenuPg(menu request.CreateRequest) error {
-	query := "INSERT INTO menu (name, category, description, price) VALUES ($1, $2, $3, $4)"
-	_, err := config.PG.Exec(query, menu.Name, menu.Category, menu.Desc, menu.Price)
+func CreateMenuPg(menu request.CreateRequest) (response.AllMenuResponse, error) {
+	// Insert the new menu item and return the inserted id
+	query := `
+		INSERT INTO menu (name, category, description, price)
+		VALUES ($1, $2, $3, $4)
+		RETURNING id`  
+	
+	var id int
+	err := config.PG.QueryRow(query, menu.Name, menu.Category, menu.Desc, menu.Price).Scan(&id)
 	if err != nil {
 		log.Println("Error inserting menu item:", err)
-		return fmt.Errorf("error inserting menu item: %v", err)
+		return response.AllMenuResponse{}, fmt.Errorf("error inserting menu item: %v", err)
 	}
-	log.Println("Menu item created successfully")
-	return nil
+	newid:=strconv.Itoa(id)
+	// Now retrieve the newly inserted menu item using the last inserted id
+	createdMenu, err := GetMenuByIdPg(newid)  // Use the integer id directly
+	if err != nil {
+		return response.AllMenuResponse{}, err
+	}
+
+	log.Println("Menu item created successfully in postgres")
+	return createdMenu, nil
 }
-func UpdateMenuPg(id string, menu request.UpdateRequest) error {
+
+func UpdateMenuPg(id string, menu request.CreateRequest) (response.AllMenuResponse,error) {
 	query := "UPDATE menu SET name=$1, category=$2, description=$3, price=$4 WHERE id=$5"
 	result, err := config.PG.Exec(query, menu.Name, menu.Category, menu.Desc, menu.Price, id)
 	if err != nil {
 		log.Println("Error inserting menu item:", err)
-		return fmt.Errorf("error updating menu item: %v", err)
+		return response.AllMenuResponse{},fmt.Errorf("error updating menu item: %v", err)
 	}
 	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
-		return fmt.Errorf("no menu item found with ID %v", id)
+		return response.AllMenuResponse{},fmt.Errorf("no menu item found with ID %v", id)
 	}
 	log.Println("Menu item updated successfully")
-	return nil
+	res,err:=GetMenuByIdPg(id)
+	if err!=nil{
+		return response.AllMenuResponse{},fmt.Errorf("error in getting updated menu item: %v",err)
+	}
+	return res,nil
 }
 func DeleteMenuPg(id string) error {
 	query := "DELETE FROM menu WHERE id=$1"
@@ -204,11 +277,9 @@ func DeleteMenuPg(id string) error {
 		log.Println("Error Deleting menu item:", err)
 		return fmt.Errorf("Error updating menu item: %v", err)
 	}
-
 	if rowsAffected, _ := result.RowsAffected(); rowsAffected == 0 {
 		return fmt.Errorf("No menu item found with ID %v", id)
 	}
-
 	log.Println("Menu item Deleted successfully")
 	return nil
 }

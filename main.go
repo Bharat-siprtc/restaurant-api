@@ -10,6 +10,7 @@ import (
 func main() {
 	e := echo.New()
 	config.ConnectDB()
+	config.CreateCounterSeq()
 	config.PostgresConnect()
 	routes.InitRoutes(e)
 	e.Logger.Fatal(e.Start(":8282"))

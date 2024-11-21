@@ -11,6 +11,7 @@ import (
 	"github.com/BurntSushi/toml"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -72,6 +73,7 @@ func ConnectDB() {
 
 	DB = client.Database(config.MongoDB.Database)
 }
+
 func PostgresConnect() {
 	err := godotenv.Load(".env")
 	if err != nil {
@@ -127,6 +129,30 @@ func createMenuTable(db *sql.DB) error {
 	_, err := db.Exec(query)
 	if err != nil {
 		return fmt.Errorf("error creating table: %v", err)
+	}
+	return nil
+}
+
+func CreateCounterSeq() error {
+	collection := DB.Collection("counters") // Counter collection name
+
+	// Check if the sequence document exists
+	var result bson.M
+	err := collection.FindOne(context.Background(), bson.M{"_id": "restaurant_id"}).Decode(&result)
+	if err == mongo.ErrNoDocuments {
+		// Sequence document doesn't exist, create it with an initial value of 0
+		_, err = collection.InsertOne(context.Background(), bson.M{
+			"_id": "restaurant_id", // Unique identifier for the sequence
+			"seq": 0,               // Initial sequence value
+		})
+		if err != nil {
+			return fmt.Errorf("error creating counter sequence document: %v", err)
+		}
+		fmt.Println("Counter sequence document created with initial value.")
+	} else if err != nil {
+		return fmt.Errorf("error checking counter sequence document: %v", err)
+	} else {
+		fmt.Println("Counter sequence document already exists.")
 	}
 	return nil
 }

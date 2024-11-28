@@ -22,7 +22,7 @@ func GetMenu(c echo.Context) error {
 	flag := c.QueryParam("flag")
 	menu, err := manager.GetMenu(flag)
 	if err != nil {
-		return c.JSON(http.StatusBadRequest, err.Error())
+		return c.JSON(http.StatusBadRequest,map[string]string{"error":err.Error()})
 	}
 	return c.JSON(http.StatusOK, menu)
 }

@@ -3,12 +3,11 @@ package config
 import (
 	"context"
 	"database/sql"
-	"example/restaurant-api/models"
 	"fmt"
 	"log"
 	"os"
 
-	"github.com/BurntSushi/toml"
+	"github.com/caarlos0/env"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 	"go.mongodb.org/mongo-driver/bson"
@@ -55,12 +54,20 @@ var PG *sql.DB
 //		DB = client.Database(config.MongoDBName)
 //		fmt.Println(DB)
 //	}
+//
+// var mongoCon MongoConfig
+// var a=mongoCon.MongoDBURL
 func ConnectDB() {
-	var config models.Config
-	if _, err := toml.DecodeFile("config.toml", &config); err != nil {
-		log.Fatalf("Error loading config file: %v", err)
+	cfg := MongoConfig{}
+	if err := env.Parse(&cfg); err != nil {
+		log.Fatalf("Failed to parse env vars: %v", err)
 	}
-	clientOptions := options.Client().ApplyURI(config.MongoDB.URI)
+	fmt.Printf("Connecting to MongoDB at %s using database %s\n", cfg.MongoDBURL, cfg.MongoDBName)
+	// var mongoConfig models.Config
+	// if _, err := toml.DecodeFile("config.toml", &config); err != nil {
+	// 	log.Fatalf("Error loading config file: %v", err)
+	// }
+	clientOptions := options.Client().ApplyURI(cfg.MongoDBURL)
 	client, err := mongo.Connect(context.Background(), clientOptions)
 	if err != nil {
 		log.Fatal(err)
@@ -71,7 +78,7 @@ func ConnectDB() {
 		log.Fatal(err)
 	}
 
-	DB = client.Database(config.MongoDB.Database)
+	DB = client.Database(cfg.MongoDBName)
 }
 
 func PostgresConnect() {
@@ -89,13 +96,6 @@ func PostgresConnect() {
 
 	// Format PostgreSQL DSN string
 	postgresDSN := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", postgresHost, postgresPort, postgresUser, postgresPassword, postgresDB)
-	// log.Printf("Connecting to PostgreSQL with DSN: %s", "postgres", "user=postgres dbname=restaurant sslmode=disable")
-	// Connect to PostgreSQL
-	// PGDB, err := sql.Open("postgres", "user=postgres dbname=restaurant sslmode=disable password=2503")
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// defer PGDB.Close()
 
 	PGDB, err := sql.Open("postgres", postgresDSN)
 	if err != nil {
